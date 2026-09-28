@@ -28,6 +28,16 @@ class HojaRuta(Base):
         back_populates="hoja_ruta",
     )
     pistoleos = relationship("Pistoleo", back_populates="hoja_ruta")
+    reasignaciones_origen = relationship(
+        "Reasignacion",
+        foreign_keys="[Reasignacion.hoja_origen_id]",
+        back_populates="hoja_origen",
+    )
+    reasignaciones_destino = relationship(
+        "Reasignacion",
+        foreign_keys="[Reasignacion.hoja_destino_id]",
+        back_populates="hoja_destino",
+    )
 
     __table_args__ = (
         CheckConstraint("tipo IN ('HRD', 'HRE')", name="ck_hojas_ruta_tipo"),

@@ -14,6 +14,7 @@ from app.models.bulto import Bulto  # noqa: F401, E402
 from app.models.hoja_ruta import HojaRuta  # noqa: F401, E402
 from app.models.incidencia import Incidencia  # noqa: F401, E402
 from app.models.pistoleo import Pistoleo  # noqa: F401, E402
+from app.models.reasignacion import Reasignacion  # noqa: F401, E402
 from app.models.rol import Rol  # noqa: F401, E402
 from app.models.usuario import Usuario  # noqa: F401, E402
 

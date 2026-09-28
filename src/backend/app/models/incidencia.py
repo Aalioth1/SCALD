@@ -31,6 +31,7 @@ class Incidencia(Base):
         "HojaRuta",
         foreign_keys=[nueva_hoja_ruta_id],
     )
+    reasignaciones = relationship("Reasignacion", back_populates="incidencia")
 
     __table_args__ = (
         CheckConstraint(

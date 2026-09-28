@@ -18,18 +18,19 @@ La vista inicial permite seleccionar uno o varios PDF y validar localmente que s
 - CRUD inicial de hojas de ruta.
 - Alta y consulta de bultos esperados.
 - Registro básico de pistoleos.
+- Consulta, regularización y anulación de incidencias.
+- Parser CMK inicial e importación múltiple de PDF con resultados parciales.
 - Pruebas funcionales con `pytest`.
 
 ### Pendiente para alcanzar el alcance del legado
 
-- Parser CMK para PDF HRD/HRE.
-- Importación simple y masiva de PDF.
+- OCR para PDFs escaneados y validación avanzada de layouts CMK.
 - Persistencia de OV, factura, cliente y origen.
 - Incidencias y estados de seguimiento.
 - Reasignación transaccional de bultos.
 - Auditoría de cambios.
 - Reportes y dashboard.
-- Migraciones Alembic y configuración PostgreSQL 16.
+- Procedimientos y triggers PostgreSQL para operaciones críticas.
 
 ## Estructura
 
@@ -45,6 +46,9 @@ src/
 	│   ├── repositories/   # Persistencia
 	│   ├── schemas/        # Validación Pydantic
 	│   └── services/       # Lógica de negocio
+	├── alembic/              # Migraciones versionadas
+	├── alembic.ini
+	├── docker-compose.yml    # PostgreSQL 16
 	├── tests/
 	├── requirements.txt
 	└── README.md
@@ -56,6 +60,39 @@ src/
 npm install
 npm run dev
 ```
+
+## Preparar PostgreSQL y Alembic
+
+Docker debe estar instalado y ejecutándose. Desde el backend:
+
+```bash
+cd src/backend
+copy .env.example .env
+docker compose up -d postgres
+python -m alembic upgrade head
+```
+
+La migración inicial crea las tablas actuales y los roles `ADMIN` y `AUDITOR`. No se deben crear tablas manualmente en pgAdmin.
+
+Para comprobar la revisión aplicada:
+
+```bash
+python -m alembic current
+```
+
+Para detener PostgreSQL sin eliminar sus datos:
+
+```bash
+docker compose stop postgres
+```
+
+Para eliminar también el volumen local de desarrollo:
+
+```bash
+docker compose down -v
+```
+
+> Docker no estaba disponible en el entorno donde se preparó esta configuración. La migración sí fue verificada sobre una base SQLite temporal y llegó a la revisión `20260928_0001`.
 
 ## Ejecutar backend
 
@@ -74,9 +111,10 @@ Copiar `.env.example` como `.env` dentro de `src/backend`:
 
 ```env
 SECRET_KEY=change-me-in-production
-DATABASE_URL=sqlite:///./scald.db
+DATABASE_URL=postgresql+psycopg://scald:scald_dev_password@localhost:5433/scald
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=1440
+ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
 ```
 
 ## Endpoints disponibles
@@ -94,6 +132,11 @@ POST /api/v1/bultos
 GET  /api/v1/bultos
 GET  /api/v1/bultos/{id}
 POST /api/v1/pistoleos
+POST /api/v1/importaciones/hojas-ruta
+GET  /api/v1/incidencias
+GET  /api/v1/incidencias/{id}
+PATCH /api/v1/incidencias/{id}/regularizar
+PATCH /api/v1/incidencias/{id}/anular
 GET  /health
 ```
 

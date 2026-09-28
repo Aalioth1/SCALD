@@ -11,6 +11,10 @@ class IncidenciaCreate(BaseModel):
     nueva_hoja_ruta_id: int | None = None
 
 
+class IncidenciaResolution(BaseModel):
+    observaciones: str | None = Field(default=None, max_length=500)
+
+
 class IncidenciaOut(BaseModel):
     id: int
     tipo: str

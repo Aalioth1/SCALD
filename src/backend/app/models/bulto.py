@@ -20,6 +20,7 @@ class Bulto(Base):
     hoja_ruta = relationship("HojaRuta", back_populates="bultos")
     pistoleos = relationship("Pistoleo", back_populates="bulto")
     incidencias = relationship("Incidencia", back_populates="bulto")
+    reasignaciones = relationship("Reasignacion", back_populates="bulto")
 
     __table_args__ = (
         UniqueConstraint("hoja_ruta_id", "codigo", name="uq_bultos_hoja_codigo"),
