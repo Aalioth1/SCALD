@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.models.bulto import Bulto
+from app.models.auditoria import Auditoria
 from app.models.incidencia import Incidencia
 from app.models.pistoleo import Pistoleo
 
@@ -17,6 +18,12 @@ class AuditoriaService:
         if bulto.pistoleado:
             return "OK"
         return "FALTANTE"
+
+    def listar_registros(self, entidad: str | None = None, limite: int = 100):
+        query = self.db.query(Auditoria).order_by(Auditoria.fecha_hora.desc())
+        if entidad:
+            query = query.filter(Auditoria.entidad == entidad.upper())
+        return query.limit(limite).all()
 
     def registrar_pistoleo(
         self,
@@ -59,6 +66,7 @@ class AuditoriaService:
                 bulto.pistoleado = True
                 bulto.estado = estado
                 self.db.add(bulto)
+            self.db.flush()
             if estado != "OK":
                 self._crear_incidencia_en_transaccion(
                     tipo=estado,
@@ -67,6 +75,15 @@ class AuditoriaService:
                     usuario_id=usuario_id,
                     observaciones=observacion,
                 )
+            self.db.add(
+                Auditoria(
+                    usuario_id=usuario_id,
+                    entidad="PISTOLEO",
+                    entidad_id=pistoleo.id,
+                    accion="CREAR",
+                    datos_nuevos={"codigo_bulto": codigo, "estado": estado},
+                )
+            )
             self.db.commit()
             self.db.refresh(pistoleo)
             return pistoleo

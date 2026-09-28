@@ -4,6 +4,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.models.incidencia import Incidencia
+from app.models.auditoria import Auditoria
 
 
 class IncidenciaService:
@@ -33,6 +34,16 @@ class IncidenciaService:
         incidencia.fecha_resolucion = datetime.now(timezone.utc)
         if observaciones:
             incidencia.observaciones = observaciones
+        self.db.add(
+            Auditoria(
+                usuario_id=usuario_id,
+                entidad="INCIDENCIA",
+                entidad_id=incidencia.id,
+                accion="REGULARIZAR",
+                datos_anteriores={"estado": "PENDIENTE"},
+                datos_nuevos={"estado": incidencia.estado},
+            )
+        )
         self.db.commit()
         self.db.refresh(incidencia)
         return incidencia
@@ -45,6 +56,16 @@ class IncidenciaService:
         incidencia.fecha_resolucion = datetime.now(timezone.utc)
         if observaciones:
             incidencia.observaciones = observaciones
+        self.db.add(
+            Auditoria(
+                usuario_id=usuario_id,
+                entidad="INCIDENCIA",
+                entidad_id=incidencia.id,
+                accion="ANULAR",
+                datos_anteriores={"estado": "PENDIENTE"},
+                datos_nuevos={"estado": incidencia.estado},
+            )
+        )
         self.db.commit()
         self.db.refresh(incidencia)
         return incidencia

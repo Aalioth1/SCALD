@@ -5,6 +5,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.models.bulto import Bulto
+from app.models.auditoria import Auditoria
 from app.models.hoja_ruta import HojaRuta
 from app.schemas.importacion import ImportacionArchivoResultado, ImportacionResponse
 from app.services.pdf_parser_service import PdfParseError, parse_pdf_bytes
@@ -16,7 +17,7 @@ class ImportacionService:
     def __init__(self, db: Session):
         self.db = db
 
-    def importar(self, archivos: list[tuple[str, str | None, bytes]]) -> ImportacionResponse:
+    def importar(self, archivos: list[tuple[str, str | None, bytes]], usuario_id: int) -> ImportacionResponse:
         resultados: list[ImportacionArchivoResultado] = []
         hojas_creadas = 0
         hojas_actualizadas = 0
@@ -72,6 +73,20 @@ class ImportacionService:
                             )
                         )
                         created += 1
+
+                    self.db.add(
+                        Auditoria(
+                            usuario_id=usuario_id,
+                            entidad="HOJA_RUTA",
+                            entidad_id=hoja.id,
+                            accion="IMPORTAR_PDF",
+                            datos_nuevos={
+                                "codigo": parsed["codigo"],
+                                "archivo": filename,
+                                "bultos": len(parsed["bultos"]),
+                            },
+                        )
+                    )
 
                 bultos_creados += created
                 resultados.append(

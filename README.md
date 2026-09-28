@@ -20,6 +20,8 @@ La vista inicial permite seleccionar uno o varios PDF y validar localmente que s
 - Registro básico de pistoleos.
 - Consulta, regularización y anulación de incidencias.
 - Parser CMK inicial e importación múltiple de PDF con resultados parciales.
+- Bitácora de auditoría para operaciones críticas y consulta administrativa.
+- Reportes backend de resumen, hoja de ruta e incidencias.
 - Pruebas funcionales con `pytest`.
 
 ### Pendiente para alcanzar el alcance del legado
@@ -28,8 +30,8 @@ La vista inicial permite seleccionar uno o varios PDF y validar localmente que s
 - Persistencia de OV, factura, cliente y origen.
 - Incidencias y estados de seguimiento.
 - Reasignación transaccional de bultos.
-- Auditoría de cambios.
-- Reportes y dashboard.
+- Auditoría completa de CRUD y permisos.
+- Dashboard frontend y exportación avanzada de reportes.
 - Procedimientos y triggers PostgreSQL para operaciones críticas.
 
 ## Estructura
@@ -133,6 +135,10 @@ GET  /api/v1/bultos
 GET  /api/v1/bultos/{id}
 POST /api/v1/pistoleos
 POST /api/v1/importaciones/hojas-ruta
+GET  /api/v1/auditoria
+GET  /api/v1/reportes/resumen
+GET  /api/v1/reportes/hoja-ruta/{id}
+GET  /api/v1/reportes/incidencias
 GET  /api/v1/incidencias
 GET  /api/v1/incidencias/{id}
 PATCH /api/v1/incidencias/{id}/regularizar

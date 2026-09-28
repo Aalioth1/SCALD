@@ -5,6 +5,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.models.bulto import Bulto
+from app.models.auditoria import Auditoria
 from app.models.hoja_ruta import HojaRuta
 from app.models.incidencia import Incidencia
 from app.models.reasignacion import Reasignacion
@@ -112,6 +113,17 @@ class ReasignacionService:
         bulto.hoja_ruta_id = destino.id
         bulto.estado = "REASIGNADO"
         self.db.add(reasignacion)
+        self.db.flush()
+        self.db.add(
+            Auditoria(
+                usuario_id=usuario_id,
+                entidad="REASIGNACION",
+                entidad_id=reasignacion.id,
+                accion="CREAR",
+                datos_anteriores={"hoja_ruta_id": origen_id},
+                datos_nuevos={"hoja_ruta_id": destino.id, "bulto_id": bulto.id},
+            )
+        )
 
         try:
             self.db.commit()

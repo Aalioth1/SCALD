@@ -11,6 +11,7 @@ sys.path.insert(0, str(BACKEND_DIR))
 from app.core.config import get_settings  # noqa: E402
 from app.core.database import Base  # noqa: E402
 from app.models.bulto import Bulto  # noqa: F401, E402
+from app.models.auditoria import Auditoria  # noqa: F401, E402
 from app.models.hoja_ruta import HojaRuta  # noqa: F401, E402
 from app.models.incidencia import Incidencia  # noqa: F401, E402
 from app.models.pistoleo import Pistoleo  # noqa: F401, E402

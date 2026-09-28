@@ -19,4 +19,4 @@ async def importar_hojas_ruta(
         (archivo.filename or "archivo.pdf", archivo.content_type, await archivo.read())
         for archivo in archivos
     ]
-    return ImportacionService(db).importar(payloads)
+    return ImportacionService(db).importar(payloads, current_user.id)

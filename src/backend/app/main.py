@@ -2,15 +2,18 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.auth import router as auth_router
+from app.api.v1.auditoria import router as auditoria_router
 from app.api.v1.bultos import router as bultos_router
 from app.api.v1.hojas_ruta import router as hojas_ruta_router
 from app.api.v1.incidencias import router as incidencias_router
 from app.api.v1.importaciones import router as importaciones_router
 from app.api.v1.pistoleo import router as pistoleo_router
 from app.api.v1.reasignaciones import router as reasignaciones_router
+from app.api.v1.reportes import router as reportes_router
 from app.core.config import get_settings
 # Import models so SQLAlchemy registers all relationships before requests.
 from app.models.bulto import Bulto
+from app.models.auditoria import Auditoria
 from app.models.hoja_ruta import HojaRuta
 from app.models.incidencia import Incidencia
 from app.models.pistoleo import Pistoleo
@@ -30,12 +33,14 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
+app.include_router(auditoria_router)
 app.include_router(hojas_ruta_router)
 app.include_router(bultos_router)
 app.include_router(incidencias_router)
 app.include_router(importaciones_router)
 app.include_router(pistoleo_router)
 app.include_router(reasignaciones_router)
+app.include_router(reportes_router)
 
 
 @app.get("/health")
