@@ -24,7 +24,6 @@ def test_auth_register_and_login():
             "apellido": "Pérez",
             "email": email,
             "password": "SecurePass123!",
-            "role": "AUDITOR",
         },
     )
     assert response.status_code == 201, response.text
@@ -39,24 +38,30 @@ def test_auth_register_and_login():
     assert data["token_type"] == "bearer"
 
 
-def test_hoja_ruta_create_and_duplicate_validation():
+def test_public_register_cannot_assign_admin_role():
     client = TestClient(app)
-    email = unique_email("admin")
-    codigo = f"HRD-2026-{uuid4().int % 9000 + 1000}"
-
-    register = client.post(
+    response = client.post(
         "/api/v1/auth/register",
         json={
-            "nombre": "Admin",
-            "apellido": "Sistema",
-            "email": email,
+            "nombre": "Intento",
+            "apellido": "Admin",
+            "email": unique_email("privilege"),
             "password": "SecurePass123!",
             "role": "ADMIN",
         },
     )
+
+    assert response.status_code == 201, response.text
+    assert response.json()["role"] == "AUDITOR"
+
+
+def test_hoja_ruta_create_and_duplicate_validation():
+    client = TestClient(app)
+    codigo = f"HRD-2026-{uuid4().int % 9000 + 1000}"
+
     token = client.post(
         "/api/v1/auth/login",
-        json={"email": email, "password": "SecurePass123!"},
+        json={"email": "admin-fixture@example.com", "password": "SecurePass123!"},
     ).json()["access_token"]
 
     headers = {"Authorization": f"Bearer {token}"}
@@ -91,7 +96,6 @@ def test_pistoleo_requires_valid_bulto_and_hoja_ruta():
             "apellido": "Uno",
             "email": email,
             "password": "SecurePass123!",
-            "role": "AUDITOR",
         },
     )
     token = client.post(

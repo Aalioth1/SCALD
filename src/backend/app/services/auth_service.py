@@ -17,12 +17,12 @@ class AuthService:
         if existing:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="El correo ya está registrado")
 
-        role = self.db.query(Rol).filter(Rol.nombre == payload.role.upper()).first()
+        role = self.db.query(Rol).filter(Rol.nombre == "AUDITOR").first()
         if role is None:
-            role = Rol(nombre=payload.role.upper(), descripcion="Rol asignado por sistema")
-            self.db.add(role)
-            self.db.commit()
-            self.db.refresh(role)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="La configuración de roles del sistema está incompleta",
+            )
 
         user = self.repository.create(
             nombre=payload.nombre,

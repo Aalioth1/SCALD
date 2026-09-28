@@ -1,6 +1,6 @@
 from datetime import date
 
-from sqlalchemy import Boolean, Column, Date, ForeignKey, Integer, String
+from sqlalchemy import Boolean, CheckConstraint, Column, Date, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -21,4 +21,10 @@ class Bulto(Base):
     pistoleos = relationship("Pistoleo", back_populates="bulto")
     incidencias = relationship("Incidencia", back_populates="bulto")
 
-    __table_args__ = ({"sqlite_autoincrement": True},)
+    __table_args__ = (
+        UniqueConstraint("hoja_ruta_id", "codigo", name="uq_bultos_hoja_codigo"),
+        CheckConstraint(
+            "estado IN ('PENDIENTE', 'OK', 'FALTANTE', 'DUPLICADO', 'SIN LISTA', 'SIN HOJA', 'REASIGNADO')",
+            name="ck_bultos_estado",
+        ),
+    )

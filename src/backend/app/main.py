@@ -6,7 +6,7 @@ from app.api.v1.bultos import router as bultos_router
 from app.api.v1.hojas_ruta import router as hojas_ruta_router
 from app.api.v1.pistoleo import router as pistoleo_router
 from app.core.config import get_settings
-from app.core.database import Base, engine
+# Import models so SQLAlchemy registers all relationships before requests.
 from app.models.bulto import Bulto
 from app.models.hoja_ruta import HojaRuta
 from app.models.incidencia import Incidencia
@@ -24,8 +24,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-Base.metadata.create_all(bind=engine)
 
 app.include_router(auth_router)
 app.include_router(hojas_ruta_router)

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
@@ -14,7 +14,7 @@ class Pistoleo(Base):
     hoja_ruta_id = Column(Integer, ForeignKey("hojas_ruta.id"), nullable=True)
     bulto_id = Column(Integer, ForeignKey("bultos.id"), nullable=True)
     usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False)
-    fecha_hora = Column(DateTime, nullable=False, default=datetime.utcnow)
+    fecha_hora = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
     estado = Column(String(50), nullable=False, default="OK")
     observacion = Column(String(500), nullable=True)
 

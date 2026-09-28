@@ -11,7 +11,6 @@ class RegisterRequest(BaseModel):
     apellido: str = Field(..., min_length=2, max_length=100)
     email: EmailStr
     password: str = Field(..., min_length=8)
-    role: str = "AUDITOR"
 
 
 class TokenResponse(BaseModel):

@@ -1,27 +1,32 @@
+import re
 from datetime import date
+from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class HojaRutaCreate(BaseModel):
     codigo: str = Field(..., min_length=5, max_length=50)
-    tipo: str = Field(..., min_length=2, max_length=20)
+    tipo: Literal["HRD", "HRE"]
     fecha: date
     ruta: str = Field(..., min_length=2, max_length=200)
     transporte: str | None = None
     cantidad_declarada: int = Field(..., ge=0)
-    estado: str = "ACTIVA"
+    estado: Literal["ACTIVA", "INACTIVA", "CERRADA"] = "ACTIVA"
 
     @field_validator("codigo")
     @classmethod
     def validate_codigo(cls, value: str) -> str:
         cleaned = value.strip().upper()
-        if "-" not in cleaned:
-            raise ValueError("El código debe seguir el formato TIPO-AÑO-NÚMERO")
-        tipo, anio, numero = cleaned.split("-", 2)
-        if not tipo or not anio.isdigit() or not numero.isdigit():
+        if not re.fullmatch(r"HR[DE]-\d{4}-\d+", cleaned):
             raise ValueError("Formato de hoja de ruta inválido")
         return cleaned
+
+    @model_validator(mode="after")
+    def validate_tipo_codigo(self):
+        if not self.codigo.startswith(self.tipo + "-"):
+            raise ValueError("El tipo no coincide con el prefijo del código")
+        return self
 
 
 class HojaRutaUpdate(HojaRutaCreate):

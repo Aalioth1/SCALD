@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
@@ -37,7 +37,7 @@ class AuditoriaService:
             usuario_id=usuario_id,
             estado=estado,
             observacion="Pistoleo registrado",
-            fecha_hora=datetime.utcnow(),
+            fecha_hora=datetime.now(timezone.utc),
         )
         self.db.add(pistoleo)
         self.db.commit()
@@ -52,7 +52,7 @@ class AuditoriaService:
             usuario_id=usuario_id,
             estado="PENDIENTE",
             observaciones=observaciones,
-            fecha_creacion=datetime.utcnow(),
+            fecha_creacion=datetime.now(timezone.utc),
         )
         self.db.add(incidencia)
         self.db.commit()

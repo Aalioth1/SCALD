@@ -1,6 +1,6 @@
-from datetime import date, datetime
+from datetime import datetime, timezone
 
-from sqlalchemy import Column, Date, DateTime, ForeignKey, Integer, String
+from sqlalchemy import CheckConstraint, Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -17,8 +17,8 @@ class Incidencia(Base):
     estado = Column(String(30), nullable=False, default="PENDIENTE")
     observaciones = Column(String(500), nullable=True)
     nueva_hoja_ruta_id = Column(Integer, ForeignKey("hojas_ruta.id"), nullable=True)
-    fecha_creacion = Column(DateTime, nullable=False, default=datetime.utcnow)
-    fecha_resolucion = Column(DateTime, nullable=True)
+    fecha_creacion = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    fecha_resolucion = Column(DateTime(timezone=True), nullable=True)
 
     hoja_ruta = relationship(
         "HojaRuta",
@@ -30,4 +30,11 @@ class Incidencia(Base):
     nueva_hoja_ruta = relationship(
         "HojaRuta",
         foreign_keys=[nueva_hoja_ruta_id],
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "estado IN ('PENDIENTE', 'REGULARIZADO', 'REASIGNADO', 'ANULADO')",
+            name="ck_incidencias_estado",
+        ),
     )
