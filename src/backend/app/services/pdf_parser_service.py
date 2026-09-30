@@ -26,15 +26,13 @@ def parse_pdf_bytes(content: bytes, filename: str) -> dict:
 
 def parse_hoja_ruta_text(text: str, filename: str = "") -> dict:
     normalized = text or ""
-    code_match = HR_RE.search(normalized)
-    if code_match is None:
-        code_match = HR_RE.search(filename)
-    if code_match is None:
+    codigo = _extract_code(normalized) or _extract_code(filename)
+    if codigo is None:
         raise PdfParseError("No se encontró un código HRD/HRE")
 
-    codigo = code_match.group(0).upper()
     tipo = codigo[:3]
-    bultos = list(dict.fromkeys(match.upper() for match in BU_RE.findall(normalized)))
+    compact = re.sub(r"BU\s+(\d{8})", r"BU\1", normalized, flags=re.IGNORECASE)
+    bultos = list(dict.fromkeys(match.upper() for match in BU_RE.findall(compact)))
     if not bultos:
         raise PdfParseError("No se encontraron códigos de bulto BU########")
 
@@ -56,6 +54,18 @@ def parse_hoja_ruta_text(text: str, filename: str = "") -> dict:
     }
 
 
+def _extract_code(text: str) -> str | None:
+    labeled = re.search(
+        r"N[°º]\s*(?:Definitiva\s*)?(HR[DE]-\d{4}-\d+)",
+        text,
+        re.IGNORECASE,
+    )
+    if labeled:
+        return labeled.group(1).upper()
+    match = HR_RE.search(text)
+    return match.group(0).upper() if match else None
+
+
 def _extract_date(text: str, tipo: str) -> date | None:
     patterns = [
         r"Fecha\s+Generaci[oó]n\s*:?\s*(\d{1,2}/\d{1,2}/\d{4})",
@@ -73,14 +83,22 @@ def _extract_date(text: str, tipo: str) -> date | None:
 
 
 def _extract_route(text: str, tipo: str) -> str | None:
-    match = re.search(
-        r"Ruta\(s\)(?:\s*Despacho)?\s*:?\s*(.+?)(?=\s*TRL|\s*OV\s+Factura)",
-        text,
-        re.IGNORECASE | re.DOTALL,
-    )
+    if tipo == "HRD":
+        match = re.search(
+            r"Ruta\(s\)\s*Despacho\s*:?\s*([A-Za-z0-9][A-Za-z0-9 \-]*?)(?=\s+\d+\s+Facturas|\s*OV\b|\n|$)",
+            text,
+            re.IGNORECASE,
+        )
+    else:
+        match = re.search(
+            r"Ruta\(s\)\s*:?\s*(.+?)(?=\s*TRL|\s*OV\b|\n|$)",
+            text,
+            re.IGNORECASE | re.DOTALL,
+        )
     if match is None:
         return None
-    return re.sub(r"\s+", " ", match.group(1)).strip(" -")
+    route = re.sub(r"\s+", " ", match.group(1)).strip(" -")
+    return route or None
 
 
 def _extract_transport(text: str, tipo: str) -> str | None:

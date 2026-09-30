@@ -47,6 +47,8 @@ h1, h2, p { margin: 0; }
 .content { padding: 8px 28px 40px; }
 .stack { display: grid; gap: 18px; }
 .page-heading, .detail-head, .title-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.import-action { display: grid; justify-items: end; gap: 8px; }
+.import-action .notice, .import-action .form-error { margin: 0; max-width: 320px; text-align: right; }
 h1 { font-size: 32px; letter-spacing: -0.04em; }
 .detail-head { align-items: start; }
 .detail-head p { color: #4b5160; margin-top: 6px; }
@@ -101,7 +103,10 @@ tbody tr { cursor: default; }
 .mark.bad { color: var(--red); }
 
 .activity-list, .incident-list, .quick-actions { list-style: none; margin: 0; padding: 8px 18px 16px; display: grid; gap: 12px; }
+.activity-list { max-height: 220px; overflow-y: auto; align-content: start; }
 .activity-list li, .incident-list li, .quick-actions button { display: flex; align-items: center; gap: 8px; }
+.activity-list .dot { flex: 0 0 10px; width: 10px; height: 10px; }
+.activity-list span { font-size: 13px; line-height: 1.25; min-width: 0; }
 .activity-list time, .incident-list span, .muted, .hint, .empty { color: var(--muted); font-size: 13px; }
 .quick-actions { padding-top: 4px; }
 .quick-actions button { width: 100%; border: 0; background: transparent; text-align: left; font-weight: 600; padding: 8px 0; }

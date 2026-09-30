@@ -3,24 +3,25 @@ import { listAuditoria, listIncidencias, getResumen, listHojas } from '../api/se
 import type { Auditoria, HojaRuta, Incidencia, ReporteResumen } from '../api/types'
 import { formatDate, formatNumber, formatPercent } from '../format'
 import HojaTable from '../components/HojaTable'
+import ImportarPdfButton from '../components/ImportarPdfButton'
 
 type Props = {
   token: string
   isAdmin: boolean
   onOpenHoja: (hojaId: number) => void
   onPistoleo: (hojaId: number) => void
-  onNueva: () => void
   onIncidencias: () => void
   onReporte: () => void
   onVerTodas: () => void
 }
 
-export default function DashboardPage({ token, isAdmin, onOpenHoja, onPistoleo, onNueva, onIncidencias, onReporte, onVerTodas }: Props) {
+export default function DashboardPage({ token, isAdmin, onOpenHoja, onPistoleo, onIncidencias, onReporte, onVerTodas }: Props) {
   const [hojas, setHojas] = useState<HojaRuta[]>([])
   const [resumen, setResumen] = useState<ReporteResumen | null>(null)
   const [incidencias, setIncidencias] = useState<Incidencia[]>([])
   const [actividad, setActividad] = useState<Auditoria[]>([])
   const [error, setError] = useState('')
+  const [version, setVersion] = useState(0)
 
   useEffect(() => {
     let alive = true
@@ -35,7 +36,7 @@ export default function DashboardPage({ token, isAdmin, onOpenHoja, onPistoleo, 
         if (alive) setError(reason.message)
       })
     if (isAdmin) {
-      listAuditoria(token, 6)
+      listAuditoria(token, 30)
         .then((rows) => {
           if (alive) setActividad(rows)
         })
@@ -46,7 +47,7 @@ export default function DashboardPage({ token, isAdmin, onOpenHoja, onPistoleo, 
     return () => {
       alive = false
     }
-  }, [token, isAdmin])
+  }, [token, isAdmin, version])
 
   const activas = hojas.filter((hoja) => hoja.activo && hoja.estado === 'ACTIVA').length
   const esperados = resumen?.total_bultos_esperados ?? 0
@@ -59,11 +60,11 @@ export default function DashboardPage({ token, isAdmin, onOpenHoja, onPistoleo, 
   const actividadVisible = actividad.length
     ? actividad.map((item) => ({
         id: `a-${item.id}`,
-        tone: item.entidad === 'PISTOLEO' ? 'ok' : item.entidad === 'REASIGNACION' ? 'warn' : 'alert',
+        tone: item.entidad === 'PISTOLEO' || item.accion === 'IMPORTAR_PDF' ? 'ok' : item.entidad === 'REASIGNACION' ? 'warn' : 'alert',
         text: actividadTexto(item),
         time: formatDate(item.fecha_hora),
       }))
-    : incidencias.slice(0, 6).map((item) => ({
+    : incidencias.slice(0, 30).map((item) => ({
         id: `i-${item.id}`,
         tone: item.estado === 'PENDIENTE' ? 'alert' : 'ok',
         text: `${item.tipo} · ${item.estado.toLowerCase()}`,
@@ -74,7 +75,7 @@ export default function DashboardPage({ token, isAdmin, onOpenHoja, onPistoleo, 
     <div className="stack">
       <div className="page-heading">
         <h1>Dashboard</h1>
-        <button className="button primary" onClick={onNueva} type="button">+ Nueva Hoja de Ruta</button>
+        <ImportarPdfButton onImported={() => setVersion((value) => value + 1)} token={token} />
       </div>
       {error && <p className="form-error">{error}</p>}
       <section className="metrics" aria-label="Indicadores">
@@ -136,6 +137,10 @@ export default function DashboardPage({ token, isAdmin, onOpenHoja, onPistoleo, 
 
 function actividadTexto(item: Auditoria) {
   const datos = item.datos_nuevos ?? {}
+  const codigo = typeof datos.codigo === 'string' ? datos.codigo : ''
+  if (item.entidad === 'HOJA_RUTA' && item.accion === 'IMPORTAR_PDF') {
+    return codigo ? `Hoja de ruta importada · ${codigo}` : 'Hoja de ruta importada'
+  }
   if (item.entidad === 'PISTOLEO') return `Pistoleo ${String(datos.estado ?? '').toLowerCase() || 'registrado'}`
   if (item.entidad === 'REASIGNACION') return 'Bulto migrado de hoja'
   if (item.entidad === 'INCIDENCIA') return 'Incidencia registrada'

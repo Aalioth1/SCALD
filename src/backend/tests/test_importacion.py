@@ -6,6 +6,60 @@ from app.main import app
 from app.services.pdf_parser_service import PdfParseError, parse_hoja_ruta_text
 
 
+HRD_TEXT = """
+CMK Logística
+N° Definitiva HRD-2026-1638
+HRD-2026-1638
+Ruta Origen HR-2026-2019
+Chofer NEWTRANS Auxiliar POR ASIGNAR
+Vehiculo --- Fecha Generación 20/08/2026 10:14
+Ruta(s) Despacho COURIER-N
+22 Facturas
+39 Bultos Capturados
+OV Factura Cant. de Bultos Cliente Dirección Bultos
+376889 800332 1 CLINICA ALEMANA OSORNO BU00077736
+376861 800330 4 CLINICA ANDES SALUD CHILLAN BU00077776 BU00077745 BU00077761 BU00077770
+"""
+
+HRE_TEXT = """
+HOJA DE RUTA
+N° HRE-2026-0775
+Fecha: 20/08/2026 06:38
+Conductor: ORLANDO FREDDY VALENZUELA BAEZ
+Auxiliar: RUTA PROPIA VALENZUELA BAEZ
+Vehículo: POR ASIGNAR
+Ruta(s): SAMEDAY RUTA-A1
+TRL(s): —
+OV Factura BU Cant. Cliente Dirección Comuna
+376617 800123 BU00077040 BU00076780 2 CLINICA REÑACA
+376715 799704 BU00076720 1 FARMACIA PROFAR
+"""
+
+
+def test_parser_reads_hrd_cmk_layout():
+    parsed = parse_hoja_ruta_text(HRD_TEXT, "HRD-2026-1638.pdf")
+
+    assert parsed["codigo"] == "HRD-2026-1638"
+    assert parsed["tipo"] == "HRD"
+    assert parsed["fecha"].isoformat() == "2026-08-20"
+    assert parsed["ruta"] == "COURIER-N"
+    assert parsed["transporte"] == "NEWTRANS"
+    assert parsed["cantidad_declarada"] == 39
+    assert parsed["bultos"] == ["BU00077736", "BU00077776", "BU00077745", "BU00077761", "BU00077770"]
+
+
+def test_parser_reads_hre_reparto_layout():
+    parsed = parse_hoja_ruta_text(HRE_TEXT, "HRE-2026-0775.pdf")
+
+    assert parsed["codigo"] == "HRE-2026-0775"
+    assert parsed["tipo"] == "HRE"
+    assert parsed["fecha"].isoformat() == "2026-08-20"
+    assert parsed["ruta"] == "SAMEDAY RUTA-A1"
+    assert parsed["transporte"] == "ORLANDO FREDDY VALENZUELA BAEZ"
+    assert parsed["cantidad_declarada"] == 3
+    assert parsed["bultos"] == ["BU00077040", "BU00076780", "BU00076720"]
+
+
 def test_parser_extracts_cmk_metadata_and_bultos():
     parsed = parse_hoja_ruta_text(
         "HOJA DE RUTA HRD-2026-1638\n"

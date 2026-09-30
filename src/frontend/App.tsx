@@ -7,11 +7,10 @@ import DashboardPage from './pages/DashboardPage'
 import HojasPage from './pages/HojasPage'
 import HojaDetallePage from './pages/HojaDetallePage'
 import IncidenciasPage from './pages/IncidenciasPage'
-import NuevaHojaPage from './pages/NuevaHojaPage'
 import ReportePage from './pages/ReportePage'
 import './styles.css'
 
-type Screen = 'dashboard' | 'hojas' | 'detalle' | 'incidencias' | 'nueva' | 'reporte'
+type Screen = 'dashboard' | 'hojas' | 'detalle' | 'incidencias' | 'reporte'
 
 type StoredSession = {
   token: string
@@ -79,19 +78,16 @@ export default function App() {
 
   const role = session.user.role
   const isAdmin = role === 'ADMIN'
-  const canOperate = role === 'ADMIN' || role === 'AUDITOR'
   const nav: 'dashboard' | 'hojas' | 'incidencias' = screen === 'incidencias' ? 'incidencias' : screen === 'dashboard' || screen === 'reporte' ? 'dashboard' : 'hojas'
   const crumb = screen === 'detalle'
     ? 'Hojas de Ruta'
     : screen === 'incidencias'
       ? 'Incidencias'
-      : screen === 'nueva'
-        ? 'Nueva hoja de ruta'
-        : screen === 'reporte'
-          ? 'Reporte'
-          : screen === 'hojas'
-            ? 'Hojas de Ruta'
-            : 'Dashboard'
+      : screen === 'reporte'
+        ? 'Reporte'
+        : screen === 'hojas'
+          ? 'Hojas de Ruta'
+          : 'Dashboard'
 
   return (
     <AppShell
@@ -106,7 +102,6 @@ export default function App() {
         <DashboardPage
           isAdmin={isAdmin}
           onIncidencias={() => setScreen('incidencias')}
-          onNueva={() => setScreen('nueva')}
           onOpenHoja={(id) => openHoja(id)}
           onPistoleo={(id) => openHoja(id, true)}
           onReporte={() => setScreen('reporte')}
@@ -115,15 +110,12 @@ export default function App() {
         />
       )}
       {screen === 'hojas' && (
-        <HojasPage onNueva={() => setScreen('nueva')} onOpenHoja={(id) => openHoja(id)} token={session.token} />
+        <HojasPage onOpenHoja={(id) => openHoja(id)} token={session.token} />
       )}
       {screen === 'detalle' && hojaId !== null && (
         <HojaDetallePage canEdit={isAdmin} focusPistoleo={focusPistoleo} hojaId={hojaId} token={session.token} />
       )}
       {screen === 'incidencias' && <IncidenciasPage onOpenHoja={(id) => openHoja(id)} token={session.token} />}
-      {screen === 'nueva' && (
-        <NuevaHojaPage canCreate={canOperate} onCreated={(id) => openHoja(id)} token={session.token} />
-      )}
       {screen === 'reporte' && <ReportePage token={session.token} />}
     </AppShell>
   )
