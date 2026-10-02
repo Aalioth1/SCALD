@@ -10,6 +10,7 @@ class Bulto(Base):
     __tablename__ = "bultos"
 
     id = Column(Integer, primary_key=True, index=True)
+    usuario_id = Column(Integer, ForeignKey("usuarios.id"), nullable=False, index=True)
     codigo = Column(String(100), nullable=False, index=True)
     hoja_ruta_id = Column(Integer, ForeignKey("hojas_ruta.id"), nullable=False)
     estado = Column(String(50), nullable=False, default="PENDIENTE")
@@ -17,6 +18,7 @@ class Bulto(Base):
     fecha = Column(Date, nullable=True, default=date.today)
     info_adicional = Column(String(500), nullable=True)
 
+    usuario = relationship("Usuario")
     hoja_ruta = relationship("HojaRuta", back_populates="bultos")
     pistoleos = relationship("Pistoleo", back_populates="bulto")
     incidencias = relationship("Incidencia", back_populates="bulto")

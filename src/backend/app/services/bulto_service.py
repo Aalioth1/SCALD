@@ -12,22 +12,23 @@ class BultoService:
         self.repository = BultoRepository(db)
         self.hoja_repository = HojaRutaRepository(db)
 
-    def create(self, payload: BultoCreate):
-        hoja = self.hoja_repository.get_by_id(payload.hoja_ruta_id)
+    def create(self, payload: BultoCreate, usuario_id: int):
+        hoja = self.hoja_repository.get_by_id(payload.hoja_ruta_id, usuario_id)
         if not hoja:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Hoja de ruta no encontrada")
-        existing = self.repository.get_by_codigo_and_hoja(payload.codigo.upper(), payload.hoja_ruta_id)
+        existing = self.repository.get_by_codigo_and_hoja(payload.codigo.upper(), payload.hoja_ruta_id, usuario_id)
         if existing:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="El bulto ya existe en la hoja de ruta")
         data = payload.model_dump()
         data["codigo"] = data["codigo"].upper()
+        data["usuario_id"] = usuario_id
         return self.repository.create(data)
 
-    def get_all(self):
-        return self.repository.get_all()
+    def get_all(self, usuario_id: int):
+        return self.repository.get_all(usuario_id)
 
-    def get_by_id(self, bulto_id: int):
-        bulto = self.repository.get_by_id(bulto_id)
+    def get_by_id(self, bulto_id: int, usuario_id: int):
+        bulto = self.repository.get_by_id(bulto_id, usuario_id)
         if not bulto:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Bulto no encontrado")
         return bulto

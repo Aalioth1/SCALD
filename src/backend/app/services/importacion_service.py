@@ -28,7 +28,10 @@ class ImportacionService:
                 self._validate_file(filename, content_type, content)
                 parsed = parse_pdf_bytes(content, filename)
                 with self.db.begin_nested():
-                    hoja = self.db.query(HojaRuta).filter(HojaRuta.codigo == parsed["codigo"]).first()
+                    hoja = self.db.query(HojaRuta).filter(
+                        HojaRuta.codigo == parsed["codigo"],
+                        HojaRuta.usuario_id == usuario_id,
+                    ).first()
                     if hoja is None:
                         hoja = HojaRuta(
                             codigo=parsed["codigo"],
@@ -39,6 +42,8 @@ class ImportacionService:
                             cantidad_declarada=parsed["cantidad_declarada"],
                             estado="ACTIVA",
                             activo=True,
+                            usuario_id=usuario_id,
+                            created_at=date.today(),
                         )
                         self.db.add(hoja)
                         self.db.flush()
@@ -50,6 +55,7 @@ class ImportacionService:
                         hoja.cantidad_declarada = parsed["cantidad_declarada"]
                         hoja.activo = True
                         hoja.estado = "ACTIVA"
+                        hoja.situacion = "VIGENTE"
                         hojas_actualizadas += 1
 
                     created = 0
@@ -66,6 +72,7 @@ class ImportacionService:
                             Bulto(
                                 codigo=codigo_bulto,
                                 hoja_ruta_id=hoja.id,
+                                usuario_id=usuario_id,
                                 estado="PENDIENTE",
                                 pistoleado=False,
                                 fecha=parsed["fecha"] or date.today(),

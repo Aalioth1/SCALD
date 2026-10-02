@@ -31,7 +31,6 @@ La vista inicial permite seleccionar uno o varios PDF y validar localmente que s
 - Incidencias y estados de seguimiento.
 - Reasignación transaccional de bultos.
 - Auditoría completa de CRUD y permisos.
-- Dashboard frontend y exportación avanzada de reportes.
 - Procedimientos y triggers PostgreSQL para operaciones críticas.
 
 ## Estructura

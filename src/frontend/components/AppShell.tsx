@@ -1,25 +1,36 @@
-import type { ReactNode } from 'react'
+import type { ComponentType, ReactNode } from 'react'
+import { IconAlertTriangle, IconClipboardList, IconLayoutDashboard, IconReportAnalytics, IconRoute, IconUsers } from '@tabler/icons-react'
 import logo from '../assets/logo.png'
 
-type NavId = 'dashboard' | 'hojas' | 'incidencias'
+const navIcons: Record<string, ComponentType<{ size?: number; stroke?: number; className?: string }>> = {
+  dashboard: IconLayoutDashboard,
+  hojas: IconRoute,
+  incidencias: IconAlertTriangle,
+  reporte: IconReportAnalytics,
+  usuarios: IconUsers,
+  registros: IconClipboardList,
+}
+
+export type NavItem = { id: string; label: string }
 
 type Props = {
-  view: NavId
+  view: string
   crumb: string
   userName: string
-  onNavigate: (view: NavId) => void
+  onNavigate: (view: string) => void
   onLogout: () => void
   actions?: ReactNode
+  items?: NavItem[]
   children: ReactNode
 }
 
-const items: Array<{ id: NavId; label: string }> = [
+const defaultItems: NavItem[] = [
   { id: 'dashboard', label: 'Dashboard' },
   { id: 'hojas', label: 'Hojas de Ruta' },
   { id: 'incidencias', label: 'Incidencias' },
 ]
 
-export default function AppShell({ view, crumb, userName, onNavigate, onLogout, actions, children }: Props) {
+export default function AppShell({ view, crumb, userName, onNavigate, onLogout, actions, items = defaultItems, children }: Props) {
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -27,17 +38,20 @@ export default function AppShell({ view, crumb, userName, onNavigate, onLogout, 
           <img alt="SCALD, Control y Auditoría Logística de Despachos" className="brand-logo" src={logo} />
         </div>
         <nav className="nav-group" aria-label="Navegación principal">
-          {items.map((item) => (
-            <button
-              className={`nav-item ${view === item.id ? 'active' : ''}`}
-              key={item.id}
-              onClick={() => onNavigate(item.id)}
-              type="button"
-            >
-              <span className={`nav-swatch swatch-${item.id}`} aria-hidden="true" />
-              {item.label}
-            </button>
-          ))}
+          {items.map((item) => {
+            const Icon = navIcons[item.id] ?? IconLayoutDashboard
+            return (
+              <button
+                className={`nav-item ${view === item.id ? 'active' : ''}`}
+                key={item.id}
+                onClick={() => onNavigate(item.id)}
+                type="button"
+              >
+                <Icon className="nav-icon" size={18} stroke={1.75} aria-hidden />
+                {item.label}
+              </button>
+            )
+          })}
         </nav>
         <div className="sidebar-footer">
           <strong>{userName}</strong>

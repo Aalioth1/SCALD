@@ -37,6 +37,16 @@ class AuthService:
         user = self.repository.get_by_email(payload.email)
         if not user or not verify_password(payload.password, user.password_hash):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciales inválidas")
+        if not user.activo:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="La cuenta está desactivada")
 
-        token = create_access_token(user.email, extra={"role": user.rol.nombre if user.rol else None, "user_id": user.id})
+        role_name = user.rol.nombre if user.rol else None
+        if payload.rol and role_name != payload.rol:
+            permiso = {"ADMIN": "administrador", "AUDITOR": "auditor"}[payload.rol]
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Tu cuenta no posee permisos de {permiso}",
+            )
+
+        token = create_access_token(user.email, extra={"role": role_name, "user_id": user.id})
         return {"access_token": token, "token_type": "bearer"}

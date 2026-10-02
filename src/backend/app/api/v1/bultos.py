@@ -15,14 +15,14 @@ def create_bulto(
     db: Session = Depends(get_db),
     current_user=Depends(require_roles("ADMIN", "AUDITOR")),
 ):
-    return BultoService(db).create(payload)
+    return BultoService(db).create(payload, current_user.id)
 
 
 @router.get("", response_model=list[BultoOut])
 def list_bultos(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
-    return BultoService(db).get_all()
+    return BultoService(db).get_all(current_user.id)
 
 
 @router.get("/{bulto_id}", response_model=BultoOut)
 def get_bulto(bulto_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
-    return BultoService(db).get_by_id(bulto_id)
+    return BultoService(db).get_by_id(bulto_id, current_user.id)

@@ -3,6 +3,7 @@ import { getMe } from './api/services'
 import type { UserPublic } from './api/types'
 import AppShell from './components/AppShell'
 import LoginPage from './pages/LoginPage'
+import AdminPage from './pages/AdminPage'
 import DashboardPage from './pages/DashboardPage'
 import HojasPage from './pages/HojasPage'
 import HojaDetallePage from './pages/HojaDetallePage'
@@ -76,9 +77,12 @@ export default function App() {
     )
   }
 
-  const role = session.user.role
-  const isAdmin = role === 'ADMIN'
-  const nav: 'dashboard' | 'hojas' | 'incidencias' = screen === 'incidencias' ? 'incidencias' : screen === 'dashboard' || screen === 'reporte' ? 'dashboard' : 'hojas'
+  const userName = `${session.user.nombre} ${session.user.apellido}`.trim() || session.user.email
+  if (session.user.role === 'ADMIN') {
+    return <AdminPage onLogout={logout} token={session.token} userId={session.user.id} userName={userName} />
+  }
+
+  const nav = screen === 'detalle' ? 'hojas' : screen
   const crumb = screen === 'detalle'
     ? 'Hojas de Ruta'
     : screen === 'incidencias'
@@ -93,14 +97,20 @@ export default function App() {
     <AppShell
       actions={screen === 'dashboard' || screen === 'hojas' ? undefined : null}
       crumb={crumb}
+      items={[
+        { id: 'dashboard', label: 'Dashboard' },
+        { id: 'hojas', label: 'Hojas de Ruta' },
+        { id: 'incidencias', label: 'Incidencias' },
+        { id: 'reporte', label: 'Reporte' },
+      ]}
       onLogout={logout}
-      onNavigate={(view) => setScreen(view)}
-      userName={`${session.user.nombre} ${session.user.apellido}`.trim() || session.user.email}
+      onNavigate={(view) => setScreen(view as Screen)}
+      userName={userName}
       view={nav}
     >
       {screen === 'dashboard' && (
         <DashboardPage
-          isAdmin={isAdmin}
+          isAdmin={false}
           onIncidencias={() => setScreen('incidencias')}
           onOpenHoja={(id) => openHoja(id)}
           onPistoleo={(id) => openHoja(id, true)}
@@ -113,7 +123,7 @@ export default function App() {
         <HojasPage onOpenHoja={(id) => openHoja(id)} token={session.token} />
       )}
       {screen === 'detalle' && hojaId !== null && (
-        <HojaDetallePage canEdit={isAdmin} focusPistoleo={focusPistoleo} hojaId={hojaId} token={session.token} />
+        <HojaDetallePage canEdit={false} focusPistoleo={focusPistoleo} hojaId={hojaId} token={session.token} />
       )}
       {screen === 'incidencias' && <IncidenciasPage onOpenHoja={(id) => openHoja(id)} token={session.token} />}
       {screen === 'reporte' && <ReportePage token={session.token} />}
