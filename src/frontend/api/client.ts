@@ -1,4 +1,4 @@
-const API_BASE = 'http://127.0.0.1:8000/api/v1'
+const API_BASE = '/api/v1'
 
 export class ApiError extends Error {
   status: number
@@ -23,6 +23,16 @@ async function readError(response: Response) {
     return messages.join('. ')
   }
   return 'No se pudo completar la operación'
+}
+
+export async function requestBlob(path: string, token: string): Promise<{ blob: Blob; filename: string | null }> {
+  const headers = new Headers()
+  headers.set('Authorization', `Bearer ${token}`)
+  const response = await fetch(`${API_BASE}${path}`, { headers })
+  if (!response.ok) throw new ApiError(await readError(response), response.status)
+  const disposition = response.headers.get('Content-Disposition') ?? ''
+  const match = disposition.match(/filename="([^"]+)"/)
+  return { blob: await response.blob(), filename: match?.[1] ?? null }
 }
 
 export async function request<T>(path: string, token: string | null, init: RequestInit = {}): Promise<T> {

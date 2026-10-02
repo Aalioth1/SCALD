@@ -26,6 +26,44 @@ class ReporteHojaRuta(ReporteResumen):
     estado: str
 
 
+class ReporteOperativoHoja(BaseModel):
+    codigo: str
+    tipo: str
+    registro: date
+    ruta: str
+    transporte: str | None = None
+    estado: str
+    esperados: int
+    pistoleados: int
+    faltantes: int
+    incidencias: int
+
+
+class ReporteOperativoFaltante(BaseModel):
+    codigo: str
+    hoja: str
+    ruta: str
+    registro: date
+
+
+class ReporteOperativoIncidencia(BaseModel):
+    registro: datetime
+    hoja: str
+    bulto: str
+    tipo: str
+    estado: str
+    observaciones: str
+
+
+class ReporteOperativo(BaseModel):
+    resumen: ReporteResumen
+    hojas: list[ReporteOperativoHoja]
+    faltantes: list[ReporteOperativoFaltante]
+    incidencias: list[ReporteOperativoIncidencia]
+    pendientes: int
+    regularizadas: int
+
+
 class ReporteIncidencia(BaseModel):
     id: int
     tipo: str

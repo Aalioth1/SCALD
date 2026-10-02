@@ -47,13 +47,16 @@ def get_current_user(
 ) -> Usuario:
     token = credentials.credentials
     payload = decode_token(token)
-    email = payload.get("sub")
-    if email is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido")
-
-    user = db.query(Usuario).filter(Usuario.email == email).first()
+    user = None
+    user_id = payload.get("user_id")
+    if user_id is not None:
+        user = db.query(Usuario).filter(Usuario.id == user_id).first()
+    if user is None and payload.get("sub"):
+        user = db.query(Usuario).filter(Usuario.email == payload.get("sub")).first()
     if user is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuario no encontrado")
+    if not user.activo:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="La cuenta está desactivada")
 
     return user
 

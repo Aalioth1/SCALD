@@ -16,12 +16,15 @@ export type HojaTipo = 'HRD' | 'HRE'
 
 export type HojaRuta = {
   id: number
+  usuario_id: number
   codigo: string
   tipo: HojaTipo
   fecha: string
+  fecha_registro: string
   ruta: string
   transporte: string | null
   cantidad_declarada: number
+  cantidad_bultos: number
   estado: HojaEstado
   activo: boolean
 }
@@ -38,6 +41,7 @@ export type HojaRutaInput = {
 
 export type Bulto = {
   id: number
+  usuario_id: number
   codigo: string
   hoja_ruta_id: number
   estado: string
@@ -97,6 +101,38 @@ export type ReporteResumen = {
   incidencias_regularizadas: number
 }
 
+export type ReporteOperativo = {
+  resumen: ReporteResumen
+  hojas: Array<{
+    codigo: string
+    tipo: string
+    registro: string
+    ruta: string
+    transporte: string | null
+    estado: string
+    esperados: number
+    pistoleados: number
+    faltantes: number
+    incidencias: number
+  }>
+  faltantes: Array<{
+    codigo: string
+    hoja: string
+    ruta: string
+    registro: string
+  }>
+  incidencias: Array<{
+    registro: string
+    hoja: string
+    bulto: string
+    tipo: string
+    estado: string
+    observaciones: string
+  }>
+  pendientes: number
+  regularizadas: number
+}
+
 export type ReporteHoja = ReporteResumen & {
   hoja_ruta_id: number
   codigo: string
@@ -129,4 +165,43 @@ export type Auditoria = {
   accion: string
   datos_nuevos: Record<string, unknown> | null
   fecha_hora: string
+}
+
+export type Acceso = 'ADMIN' | 'AUDITOR'
+
+export type UsuarioAdmin = {
+  id: number
+  nombre: string
+  apellido: string
+  email: string
+  rol: Acceso | string
+  activo: boolean
+}
+
+export type UsuarioInput = {
+  nombre: string
+  apellido: string
+  email: string
+  password?: string
+  rol: Acceso
+}
+
+export type ActividadUsuario = {
+  usuario_id: number
+  nombre: string
+  apellido: string
+  email: string
+  rol: string
+  activo: boolean
+  total_hojas: number
+  total_bultos: number
+  total_pistoleos: number
+  total_incidencias: number
+  bultos_esperados: number
+  bultos_pistoleados: number
+  hojas: Array<{ id: number; codigo: string; fecha: string; fecha_registro: string; ruta: string; estado: string; situacion: 'VIGENTE' | 'ARCHIVADO' | 'ELIMINADO' }>
+  pistoleos: Array<{ id: number; codigo_bulto: string; estado: string; fecha_hora: string; observacion: string | null }>
+  faltantes: Array<{ id: number; codigo: string; hoja: string }>
+  incidencias: Array<{ id: number; hoja: string; bulto: string; tipo: string; estado: string }>
+  eventos: Array<{ id: number; entidad: string; accion: string; detalle: string; fecha_hora: string }>
 }

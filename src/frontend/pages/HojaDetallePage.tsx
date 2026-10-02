@@ -1,4 +1,4 @@
-import { type FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
+import { type FormEvent, type KeyboardEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import { ApiError } from '../api/client'
 import {
   getDetalleHoja,
@@ -8,10 +8,11 @@ import {
   listIncidencias,
   reasignarBulto,
   registrarPistoleo,
-  regularizarIncidencia,
+  resolverIncidencia,
   updateHoja,
 } from '../api/services'
 import type { Bulto, HojaEstado, HojaRuta, HojaRutaInput, HojaTipo, Incidencia, ReporteHoja } from '../api/types'
+import ResolverIncidencia from '../components/ResolverIncidencia'
 import { formatDate, formatNumber, formatRoute } from '../format'
 
 type Props = {
@@ -35,6 +36,8 @@ export default function HojaDetallePage({ token, hojaId, canEdit, focusPistoleo 
   const [editing, setEditing] = useState(false)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [resolviendo, setResolviendo] = useState<Incidencia | null>(null)
+  const [resolverError, setResolverError] = useState('')
 
   const reload = useCallback(() => {
     return Promise.all([getHoja(token, hojaId), listHojas(token), listBultos(token), listIncidencias(token), getDetalleHoja(token, hojaId)])
@@ -55,23 +58,47 @@ export default function HojaDetallePage({ token, hojaId, canEdit, focusPistoleo 
 
   const propios = useMemo(() => bultos.filter((bulto) => bulto.hoja_ruta_id === hojaId), [bultos, hojaId])
   const visibles = propios.filter((bulto) => bulto.codigo.toLowerCase().includes(search.trim().toLowerCase()))
-  const codigoNormalizado = codigo.trim().toUpperCase()
-  const encontrado = codigoNormalizado.length >= 3 && propios.some((bulto) => bulto.codigo === codigoNormalizado)
-  const incidenciasHoja = incidencias.filter((item) => item.estado === 'PENDIENTE' || item.estado === 'REASIGNADO')
+  const codigosPistoleo = codigosDePistoleo(codigo)
+  const encontrados = codigosPistoleo.filter((lectura) => propios.some((bulto) => bulto.codigo === lectura)).length
+  const avisoLectura = avisoDePistoleo(encontrados, codigosPistoleo.length)
+  const incidenciasHoja = incidencias.filter((item) => item.estado === 'PENDIENTE')
   const bultoPorId = new Map(bultos.map((bulto) => [bulto.id, bulto]))
+
+  const separarLectura = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== ' ') return
+    event.preventDefault()
+    const lecturas = codigosDePistoleo(event.currentTarget.value)
+    if (!lecturas.length) return
+    setCodigo(`${lecturas.join(', ')}, `)
+  }
 
   const escanear = (event: FormEvent) => {
     event.preventDefault()
-    if (!codigoNormalizado) return
+    const lecturas = codigosDePistoleo(codigo)
+    if (!lecturas.length) return
     setBusy(true)
     setScanMessage('')
-    registrarPistoleo(token, codigoNormalizado, hojaId)
-      .then((pistoleo) => {
-        setScanMessage(pistoleo.observacion ?? `Pistoleo ${pistoleo.estado}`)
+    lecturas
+      .reduce<Promise<Array<{ codigo: string; estado: string } | { error: string }>>>(
+        (cadena, lectura) =>
+          cadena.then((acumulado) =>
+            registrarPistoleo(token, lectura, hojaId)
+              .then((pistoleo) => [...acumulado, { codigo: pistoleo.codigo_bulto, estado: pistoleo.estado }])
+              .catch((reason: Error) => [...acumulado, { error: reason.message }]),
+          ),
+        Promise.resolve([]),
+      )
+      .then(async (resultados) => {
+        const registrados = resultados.filter((item) => 'estado' in item)
+        const fallidos = resultados.filter((item) => 'error' in item)
+        const detalle = registrados.map((item) => `${item.codigo} ${item.estado}`).join(', ')
+        const error = fallidos[0] && 'error' in fallidos[0] ? fallidos[0].error : ''
+        setScanMessage(
+          `Se registraron ${registrados.length} de ${lecturas.length} bultos.${detalle ? ` ${detalle}.` : ''}${error ? ` ${error}` : ''}`,
+        )
         setCodigo('')
-        return reload()
+        await reload()
       })
-      .catch((reason: Error) => setScanMessage(reason.message))
       .finally(() => setBusy(false))
   }
 
@@ -111,11 +138,27 @@ export default function HojaDetallePage({ token, hojaId, canEdit, focusPistoleo 
       .finally(() => setBusy(false))
   }
 
-  const resolver = (incidenciaId: number) => {
+  const abrirResolver = (incidencia: Incidencia) => {
+    setResolverError('')
+    setResolviendo(incidencia)
+  }
+
+  const cerrarResolver = () => {
+    if (busy) return
+    setResolviendo(null)
+    setResolverError('')
+  }
+
+  const confirmarResolucion = (accion: 'ELIMINAR_PISTOLEO' | 'ANADIR_BULTO') => {
+    if (!resolviendo) return
     setBusy(true)
-    regularizarIncidencia(token, incidenciaId, 'Resuelta desde el detalle de la hoja')
-      .then(() => reload())
-      .catch((reason: Error) => setError(reason.message))
+    setResolverError('')
+    resolverIncidencia(token, resolviendo.id, accion)
+      .then(() => {
+        setResolviendo(null)
+        return reload()
+      })
+      .catch((reason: Error) => setResolverError(reason.message))
       .finally(() => setBusy(false))
   }
 
@@ -136,7 +179,7 @@ export default function HojaDetallePage({ token, hojaId, canEdit, focusPistoleo 
             <button className="button primary" onClick={() => setEditing(true)} type="button">Editar</button>
           </div>
           <p>Ruta: {formatRoute(hoja.ruta)}</p>
-          <p className="meta">Fecha: {formatDate(hoja.fecha)}{hoja.transporte ? ` · Transporte: ${hoja.transporte}` : ''}</p>
+          <p className="meta">Registro: {formatDate(hoja.fecha_registro)} · Emisión: {formatDate(hoja.fecha)}{hoja.transporte ? ` · Transporte: ${hoja.transporte}` : ''}</p>
         </div>
         <div className="detail-stats">
           <div><strong>{formatNumber(esperados)}</strong><span>Esperados</span></div>
@@ -196,11 +239,12 @@ export default function HojaDetallePage({ token, hojaId, canEdit, focusPistoleo 
             <div className="card-header"><h2>Registrar Pistoleo</h2></div>
             <form className="panel-form" onSubmit={escanear}>
               <label>Código de Bulto
-                <input autoFocus={focusPistoleo} onChange={(event) => setCodigo(event.target.value)} value={codigo} />
+                <input autoFocus={focusPistoleo} onChange={(event) => setCodigo(event.target.value)} onKeyDown={separarLectura} value={codigo} />
               </label>
-              {encontrado && <p className="found">Bulto encontrado</p>}
+              <p className="hint">Pistolea uno o varios códigos seguidos. Cada lectura se separa con una coma al pulsar espacio y se registran juntas al pulsar Registrar.</p>
+              {avisoLectura && <p className={claseDePistoleo(encontrados, codigosPistoleo.length)}>{avisoLectura}</p>}
               {scanMessage && <p className="notice">{scanMessage}</p>}
-              <button className="button primary wide" disabled={busy || codigoNormalizado.length < 3} type="submit">Registrar</button>
+              <button className="button primary wide" disabled={busy || codigosPistoleo.length === 0} type="submit">Registrar</button>
             </form>
           </section>
           <section className="card">
@@ -215,17 +259,17 @@ export default function HojaDetallePage({ token, hojaId, canEdit, focusPistoleo 
             </form>
           </section>
           <section className="card">
-            <div className="card-header"><h2>Incidencias ({incidenciasHoja.length})</h2></div>
+            <div className="card-header"><h2>Incidencias pendientes ({incidenciasHoja.length})</h2></div>
             <ul className="incident-list">
               {!incidenciasHoja.length && <li className="muted">Sin incidencias en esta hoja.</li>}
               {incidenciasHoja.map((item) => (
                 <li key={item.id}>
-                  <div>
+                  <div className="incident-copy">
                     <strong>{item.tipo}</strong>
                     <span>{bultoPorId.get(item.bulto_id ?? -1)?.codigo ?? 'Sin bulto'}</span>
                   </div>
                   {item.estado === 'PENDIENTE' && (
-                    <button className="button tiny" disabled={busy} onClick={() => resolver(item.id)} type="button">Resolver</button>
+                    <button className="button tiny" disabled={busy} onClick={() => abrirResolver(item)} type="button">Resolver</button>
                   )}
                 </li>
               ))}
@@ -233,8 +277,42 @@ export default function HojaDetallePage({ token, hojaId, canEdit, focusPistoleo 
           </section>
         </div>
       </div>
+      {resolviendo && (
+        <ResolverIncidencia
+          busy={busy}
+          codigo={bultoPorId.get(resolviendo.bulto_id ?? -1)?.codigo ?? 'este bulto'}
+          duplicado={resolviendo.tipo === 'DUPLICADO'}
+          error={resolverError}
+          onAdd={() => confirmarResolucion('ANADIR_BULTO')}
+          onClose={cerrarResolver}
+          onDelete={() => confirmarResolucion('ELIMINAR_PISTOLEO')}
+        />
+      )}
     </div>
   )
+}
+
+function avisoDePistoleo(encontrados: number, total: number) {
+  const faltantes = total - encontrados
+  if (total === 0) return ''
+  if (faltantes === 0) return total === 1 ? 'Bulto encontrado' : `${total} bultos encontrados`
+  if (encontrados === 0) return total === 1 ? 'Bulto no encontrado' : `${total} bultos no encontrados`
+  const hallados = encontrados === 1 ? '1 bulto encontrado' : `${encontrados} bultos encontrados`
+  const ausentes = faltantes === 1 ? '1 no encontrado' : `${faltantes} no encontrados`
+  return `${hallados} y ${ausentes}`
+}
+
+function claseDePistoleo(encontrados: number, total: number) {
+  if (encontrados === total) return 'found'
+  if (encontrados === 0) return 'missing'
+  return 'partial'
+}
+
+function codigosDePistoleo(valor: string) {
+  return valor
+    .split(/[,;\n]+/)
+    .map((item) => item.trim().toUpperCase())
+    .filter((item) => item.length >= 3)
 }
 
 function messageOf(reason: unknown) {
@@ -286,7 +364,7 @@ function EditHoja({ hoja, canEdit, onCancel, onSave }: EditProps) {
             <option value="HRE">HRE</option>
           </select>
         </label>
-        <label>Fecha<input onChange={(event) => setForm({ ...form, fecha: event.target.value })} required type="date" value={form.fecha} /></label>
+        <label>Fecha de emisión<input onChange={(event) => setForm({ ...form, fecha: event.target.value })} required type="date" value={form.fecha} /></label>
         <label>Estado
           <select onChange={(event) => setForm({ ...form, estado: event.target.value as HojaEstado })} value={form.estado}>
             <option value="ACTIVA">ACTIVA</option>

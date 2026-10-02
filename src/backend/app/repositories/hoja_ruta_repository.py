@@ -7,14 +7,35 @@ class HojaRutaRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def get_by_codigo(self, codigo: str) -> HojaRuta | None:
-        return self.db.query(HojaRuta).filter(HojaRuta.codigo == codigo).first()
+    def get_by_codigo(self, codigo: str, usuario_id: int) -> HojaRuta | None:
+        return (
+            self.db.query(HojaRuta)
+            .filter(HojaRuta.codigo == codigo, HojaRuta.usuario_id == usuario_id)
+            .first()
+        )
 
-    def get_all(self):
-        return self.db.query(HojaRuta).filter(HojaRuta.activo.is_(True)).all()
+    def get_all(self, usuario_id: int):
+        return (
+            self.db.query(HojaRuta)
+            .filter(
+                HojaRuta.activo.is_(True),
+                HojaRuta.situacion == "VIGENTE",
+                HojaRuta.usuario_id == usuario_id,
+            )
+            .all()
+        )
 
-    def get_by_id(self, hoja_id: int) -> HojaRuta | None:
-        return self.db.query(HojaRuta).filter(HojaRuta.id == hoja_id, HojaRuta.activo.is_(True)).first()
+    def get_by_id(self, hoja_id: int, usuario_id: int) -> HojaRuta | None:
+        return (
+            self.db.query(HojaRuta)
+            .filter(
+                HojaRuta.id == hoja_id,
+                HojaRuta.activo.is_(True),
+                HojaRuta.situacion == "VIGENTE",
+                HojaRuta.usuario_id == usuario_id,
+            )
+            .first()
+        )
 
     def create(self, payload: dict) -> HojaRuta:
         hoja = HojaRuta(**payload)

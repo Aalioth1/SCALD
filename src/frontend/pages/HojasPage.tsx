@@ -44,7 +44,7 @@ export default function HojasPage({ token, onOpenHoja }: Props) {
       </div>
       {error && <p className="form-error">{error}</p>}
       <section className="card">
-        <HojaTable hojas={[...hojas].sort((a, b) => b.fecha.localeCompare(a.fecha))} onOpen={onOpenHoja} pendingByHoja={pendingByHoja} />
+        <HojaTable hojas={[...hojas].sort((a, b) => b.fecha_registro.localeCompare(a.fecha_registro))} onOpen={onOpenHoja} pendingByHoja={pendingByHoja} />
       </section>
     </div>
   )

@@ -26,6 +26,7 @@ class BultoCreate(BaseModel):
 
 class BultoOut(BaseModel):
     id: int
+    usuario_id: int
     codigo: str
     hoja_ruta_id: int
     estado: str

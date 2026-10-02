@@ -16,17 +16,17 @@ def create_hoja_ruta(
     current_user=Depends(require_roles("ADMIN", "AUDITOR")),
 ):
     service = HojaRutaService(db)
-    return service.create(payload)
+    return service.create(payload, current_user.id)
 
 
 @router.get("", response_model=list[HojaRutaOut])
 def list_hojas_ruta(db: Session = Depends(get_db), current_user=Depends(get_current_user)):
-    return HojaRutaService(db).get_all()
+    return HojaRutaService(db).get_all(current_user.id)
 
 
 @router.get("/{hoja_id}", response_model=HojaRutaOut)
 def get_hoja_ruta(hoja_id: int, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
-    return HojaRutaService(db).get_by_id(hoja_id)
+    return HojaRutaService(db).get_by_id(hoja_id, current_user.id)
 
 
 @router.put("/{hoja_id}", response_model=HojaRutaOut)
@@ -36,7 +36,7 @@ def update_hoja_ruta(
     db: Session = Depends(get_db),
     current_user=Depends(require_roles("ADMIN")),
 ):
-    return HojaRutaService(db).update(hoja_id, payload)
+    return HojaRutaService(db).update(hoja_id, payload, current_user.id)
 
 
 @router.delete("/{hoja_id}")
@@ -45,4 +45,4 @@ def delete_hoja_ruta(
     db: Session = Depends(get_db),
     current_user=Depends(require_roles("ADMIN")),
 ):
-    return HojaRutaService(db).delete(hoja_id)
+    return HojaRutaService(db).delete(hoja_id, current_user.id)

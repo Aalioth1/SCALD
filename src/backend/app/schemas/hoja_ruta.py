@@ -35,12 +35,15 @@ class HojaRutaUpdate(HojaRutaCreate):
 
 class HojaRutaOut(BaseModel):
     id: int
+    usuario_id: int
     codigo: str
     tipo: str
     fecha: date
+    fecha_registro: date
     ruta: str
     transporte: str | None = None
     cantidad_declarada: int
+    cantidad_bultos: int = 0
     estado: str
     activo: bool = True
 

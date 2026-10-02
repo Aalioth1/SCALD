@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
@@ -13,6 +13,7 @@ class Usuario(Base):
     email = Column(String(150), index=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
     rol_id = Column(Integer, ForeignKey("roles.id"), nullable=False)
+    activo = Column(Boolean, nullable=False, default=True)
 
     rol = relationship("Rol", backref="usuarios")
 

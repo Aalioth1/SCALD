@@ -69,7 +69,7 @@ export default function NuevaHojaPage({ token, canCreate, onCreated }: Props) {
                 <option value="HRE">HRE</option>
               </select>
             </label>
-            <label>Fecha<input onChange={(event) => setForm({ ...form, fecha: event.target.value })} required type="date" value={form.fecha} /></label>
+            <label>Fecha de emisión<input onChange={(event) => setForm({ ...form, fecha: event.target.value })} required type="date" value={form.fecha} /></label>
             <label>Estado
               <select onChange={(event) => setForm({ ...form, estado: event.target.value as HojaEstado })} value={form.estado}>
                 <option value="ACTIVA">ACTIVA</option>

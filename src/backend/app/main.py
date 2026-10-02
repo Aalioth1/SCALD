@@ -10,6 +10,7 @@ from app.api.v1.importaciones import router as importaciones_router
 from app.api.v1.pistoleo import router as pistoleo_router
 from app.api.v1.reasignaciones import router as reasignaciones_router
 from app.api.v1.reportes import router as reportes_router
+from app.api.v1.usuarios import router as usuarios_router
 from app.core.config import get_settings
 # Import models so SQLAlchemy registers all relationships before requests.
 from app.models.bulto import Bulto
@@ -41,6 +42,7 @@ app.include_router(importaciones_router)
 app.include_router(pistoleo_router)
 app.include_router(reasignaciones_router)
 app.include_router(reportes_router)
+app.include_router(usuarios_router)
 
 
 @app.get("/health")

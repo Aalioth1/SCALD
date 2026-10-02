@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -13,6 +14,10 @@ class IncidenciaCreate(BaseModel):
 
 class IncidenciaResolution(BaseModel):
     observaciones: str | None = Field(default=None, max_length=500)
+
+
+class IncidenciaEleccion(BaseModel):
+    accion: Literal["ELIMINAR_PISTOLEO", "ANADIR_BULTO"]
 
 
 class IncidenciaOut(BaseModel):

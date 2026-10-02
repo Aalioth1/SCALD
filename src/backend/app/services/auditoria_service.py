@@ -6,8 +6,12 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.models.bulto import Bulto
 from app.models.auditoria import Auditoria
+from app.models.hoja_ruta import HojaRuta
 from app.models.incidencia import Incidencia
 from app.models.pistoleo import Pistoleo
+from app.models.reasignacion import Reasignacion
+from app.services.hoja_ruta_service import cerrar_hoja_si_completa
+from app.schemas.auditoria import AuditoriaOut
 
 
 class AuditoriaService:
@@ -23,7 +27,19 @@ class AuditoriaService:
         query = self.db.query(Auditoria).order_by(Auditoria.fecha_hora.desc())
         if entidad:
             query = query.filter(Auditoria.entidad == entidad.upper())
-        return query.limit(limite).all()
+        registros = query.limit(limite).all()
+        referencias = self._referencias(registros)
+        salida: list[AuditoriaOut] = []
+        for registro in registros:
+            item = AuditoriaOut.model_validate(registro)
+            extra = referencias.get((registro.entidad, registro.entidad_id), {})
+            datos = dict(item.datos_nuevos or {})
+            for clave, valor in extra.items():
+                if valor not in (None, "") and not datos.get(clave):
+                    datos[clave] = valor
+            item.datos_nuevos = datos
+            salida.append(item)
+        return salida
 
     def registrar_pistoleo(
         self,
@@ -67,21 +83,48 @@ class AuditoriaService:
                 bulto.estado = estado
                 self.db.add(bulto)
             self.db.flush()
+            hoja = (
+                self.db.query(HojaRuta).filter(HojaRuta.id == hoja_efectiva).first()
+                if hoja_efectiva
+                else None
+            )
+            codigo_hoja = hoja.codigo if hoja else None
             if estado != "OK":
-                self._crear_incidencia_en_transaccion(
+                incidencia = self._crear_incidencia_en_transaccion(
                     tipo=estado,
                     hoja_ruta_id=hoja_efectiva,
                     bulto=incidencia_bulto,
                     usuario_id=usuario_id,
                     observaciones=observacion,
                 )
+                self.db.flush()
+                self.db.add(
+                    Auditoria(
+                        usuario_id=usuario_id,
+                        entidad="INCIDENCIA",
+                        entidad_id=incidencia.id,
+                        accion="CREAR",
+                        datos_nuevos={
+                            "tipo": estado,
+                            "estado": "PENDIENTE",
+                            "codigo_bulto": incidencia_bulto.codigo if incidencia_bulto else codigo,
+                            "codigo_hoja": codigo_hoja,
+                        },
+                    )
+                )
+            if estado in ("OK", "DUPLICADO") and bulto is not None and bulto.hoja_ruta_id == hoja_efectiva:
+                cerrar_hoja_si_completa(self.db, hoja_efectiva)
             self.db.add(
                 Auditoria(
                     usuario_id=usuario_id,
                     entidad="PISTOLEO",
                     entidad_id=pistoleo.id,
                     accion="CREAR",
-                    datos_nuevos={"codigo_bulto": codigo, "estado": estado},
+                    datos_nuevos={
+                        "codigo_bulto": codigo,
+                        "estado": estado,
+                        "codigo_hoja": codigo_hoja,
+                    },
                 )
             )
             self.db.commit()
@@ -129,3 +172,42 @@ class AuditoriaService:
         self.db.commit()
         self.db.refresh(incidencia)
         return incidencia
+
+    def _referencias(self, registros: list[Auditoria]) -> dict[tuple[str, int | None], dict]:
+        pistoleo_ids = [item.entidad_id for item in registros if item.entidad == "PISTOLEO" and item.entidad_id]
+        incidencia_ids = [item.entidad_id for item in registros if item.entidad == "INCIDENCIA" and item.entidad_id]
+        reasignacion_ids = [item.entidad_id for item in registros if item.entidad == "REASIGNACION" and item.entidad_id]
+        hoja_ids = [item.entidad_id for item in registros if item.entidad == "HOJA_RUTA" and item.entidad_id]
+        refs: dict[tuple[str, int | None], dict] = {}
+
+        if pistoleo_ids:
+            pistoleos = self.db.query(Pistoleo).filter(Pistoleo.id.in_(pistoleo_ids)).all()
+            for pistoleo in pistoleos:
+                refs[("PISTOLEO", pistoleo.id)] = {
+                    "codigo_bulto": pistoleo.codigo_bulto,
+                    "estado": pistoleo.estado,
+                    "codigo_hoja": pistoleo.hoja_ruta.codigo if pistoleo.hoja_ruta else None,
+                }
+        if incidencia_ids:
+            incidencias = self.db.query(Incidencia).filter(Incidencia.id.in_(incidencia_ids)).all()
+            for incidencia in incidencias:
+                refs[("INCIDENCIA", incidencia.id)] = {
+                    "tipo": incidencia.tipo,
+                    "estado": incidencia.estado,
+                    "codigo_bulto": incidencia.bulto.codigo if incidencia.bulto else None,
+                    "codigo_hoja": incidencia.hoja_ruta.codigo if incidencia.hoja_ruta else None,
+                }
+        if reasignacion_ids:
+            reasignaciones = self.db.query(Reasignacion).filter(Reasignacion.id.in_(reasignacion_ids)).all()
+            for reasignacion in reasignaciones:
+                refs[("REASIGNACION", reasignacion.id)] = {
+                    "codigo_bulto": reasignacion.bulto.codigo if reasignacion.bulto else None,
+                    "codigo_hoja_origen": reasignacion.hoja_origen.codigo if reasignacion.hoja_origen else None,
+                    "codigo_hoja_destino": reasignacion.hoja_destino.codigo if reasignacion.hoja_destino else None,
+                }
+        if hoja_ids:
+            hojas = self.db.query(HojaRuta).filter(HojaRuta.id.in_(hoja_ids)).all()
+            for hoja in hojas:
+                refs[("HOJA_RUTA", hoja.id)] = {"codigo": hoja.codigo, "codigo_hoja": hoja.codigo}
+
+        return refs
