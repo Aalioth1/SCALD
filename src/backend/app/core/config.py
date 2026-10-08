@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     app_name: str = "SCALD API"
     environment: str = "development"
     debug: bool = True
+    demo_mode: bool = Field(default=False, validation_alias="SCALD_DEMO_MODE")
     secret_key: str = Field(default="change-me-in-production")
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 60 * 24

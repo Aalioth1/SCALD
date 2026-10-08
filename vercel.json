@@ -1,0 +1,23 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "env": {
+    "SCALD_DEMO_MODE": "true",
+    "DATABASE_URL": "sqlite:////tmp/scald-demo.db",
+    "SECRET_KEY": "scald-academic-demo-key-change-me",
+    "ALLOWED_ORIGINS": "*",
+    "ENVIRONMENT": "demo",
+    "DEBUG": "false"
+  },
+  "functions": {
+    "api/index.py": {
+      "runtime": "python3.12"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

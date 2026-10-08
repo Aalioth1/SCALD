@@ -106,6 +106,69 @@ python -m uvicorn app.main:app --reload
 
 Luego abrir `http://127.0.0.1:8000/docs`.
 
+## Desplegar frontend y backend en Vercel
+
+El repositorio está preparado para desplegarse como un único proyecto Vercel:
+
+- El frontend Vite se publica desde `dist`.
+- FastAPI se ejecuta como la función Python `api/index.py`.
+- Las rutas `/api/*` se redirigen internamente a FastAPI.
+
+La base de datos debe ser PostgreSQL persistente (por ejemplo, Neon o Supabase).
+No se debe usar SQLite en Vercel porque el sistema de archivos de las funciones
+es efímero.
+
+En Vercel, configurar estas variables de entorno:
+
+```env
+DATABASE_URL=postgresql+psycopg://usuario:contraseña@host/base
+SECRET_KEY=una-clave-larga-y-aleatoria
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=1440
+ALLOWED_ORIGINS=https://tu-proyecto.vercel.app
+ENVIRONMENT=production
+DEBUG=false
+```
+
+Después de crear la base PostgreSQL, ejecutar las migraciones desde un entorno
+que tenga acceso a ella:
+
+```bash
+cd src/backend
+python -m alembic upgrade head
+```
+
+Para crear las cuentas iniciales sin guardar contraseñas en el repositorio,
+ejecutar desde la raíz con las variables de conexión y contraseñas configuradas:
+
+```bash
+set SCALD_ADMIN_PASSWORD=una-contraseña-segura
+set SCALD_AUDITOR_PASSWORD=otra-contraseña-segura
+python src/backend/scripts/seed_users.py
+```
+
+El script usa por defecto `admin@scald.com` con rol `ADMIN` y
+`moises@scald.com` con rol `AUDITOR`. También permite cambiar los correos
+mediante `SCALD_ADMIN_EMAIL` y `SCALD_AUDITOR_EMAIL`.
+
+El plan Hobby de Vercel tiene límites de ejecución y las funciones no deben
+usarse como almacenamiento persistente. El procesamiento de reportes PDF debe
+validarse en el despliegue porque `weasyprint` depende de librerías nativas.
+
+### Demo académica sin PostgreSQL
+
+Para una presentación académica, `vercel.json` activa un modo demo que usa
+SQLite en `/tmp` y crea automáticamente estas cuentas:
+
+```text
+admin@scald.com  / scald123  (Administrador)
+moises@scald.com / scald123  (Auditor)
+```
+
+La base es temporal y puede reiniciarse cuando Vercel recicle la función. Esta
+configuración no debe usarse para datos reales. Para desactivar el modo demo,
+eliminar `SCALD_DEMO_MODE` y configurar una base PostgreSQL persistente.
+
 ## Configuración local
 
 Copiar `.env.example` como `.env` dentro de `src/backend`:

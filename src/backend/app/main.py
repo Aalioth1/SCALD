@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -12,6 +14,7 @@ from app.api.v1.reasignaciones import router as reasignaciones_router
 from app.api.v1.reportes import router as reportes_router
 from app.api.v1.usuarios import router as usuarios_router
 from app.core.config import get_settings
+from app.core.demo import initialize_demo_database
 # Import models so SQLAlchemy registers all relationships before requests.
 from app.models.bulto import Bulto
 from app.models.auditoria import Auditoria
@@ -23,7 +26,21 @@ from app.models.rol import Rol
 from app.models.usuario import Usuario
 
 settings = get_settings()
-app = FastAPI(title="SCALD API", version="0.1.0", description="Backend para gestión y auditoría logística de despachos")
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    if settings.demo_mode:
+        initialize_demo_database()
+    yield
+
+
+app = FastAPI(
+    title="SCALD API",
+    version="0.1.0",
+    description="Backend para gestión y auditoría logística de despachos",
+    lifespan=lifespan,
+)
 
 app.add_middleware(
     CORSMiddleware,
